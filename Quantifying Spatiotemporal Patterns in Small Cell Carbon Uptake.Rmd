@@ -265,7 +265,7 @@ dev.off()
 ```{r}
 
 # Select an dstack relevant data:
-ridges_data <- select(data, c('Region', 'Large_POC_PON', 'Small_POC_PON', 'POC_PON'))
+ridges_data <- select(data, c('Region','Small_POC_PON', 'Large_POC_PON', 'POC_PON'))
 ridges_data <- ridges_data[!is.na(as.numeric(ridges_data$Large_POC_PON)), ]
 
 stacked_ridges <- cbind(ridges_data[c(1)], stack(ridges_data[c(2, 3)]))
@@ -288,6 +288,8 @@ ridges_plot <- stacked_ridges %>%
     theme_bw() +
     ylab("") +
     scale_x_continuous(name="Redfield Ratio", breaks=c(0, 5, 6.6, 10, 20, 30)) +
+    scale_color_manual(values=c("#E69F00", "#56B4E9", "#999999")) +
+    scale_fill_manual(values=c("#E69F00", "#56B4E9", "#999999")) +
     scale_fill_discrete(labels = c("Small (<5µm)", "Large (>5µm)")) +
     theme(legend.key=element_blank(), legend.position = "top", legend.title = element_blank())
 
