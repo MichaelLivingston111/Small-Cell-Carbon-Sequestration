@@ -1,0 +1,498 @@
+---
+title: "Quantifying Spatiotemoral Patterns in Small Cell Carbon Uptake"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# A file focused on quantifying, visualizing and identifying statistical trends in small-cell marine carbon uptake. Using data from 13-C and # 15-N labeled isotopic field experiments. 
+
+
+# Upload required libraries:
+```{r}
+
+suppressMessages(library(ggplot2))
+suppressMessages(library(caret))
+suppressMessages(library(ggpubr))
+suppressMessages(library(dplyr))
+suppressMessages(library(viridis))
+suppressMessages(library(forcats))
+suppressMessages(library(plotrix))
+suppressMessages(library(ggsci))
+suppressMessages(library(RColorBrewer))
+suppressMessages(library(ggridges))
+suppressMessages(library(PCAtools))
+suppressMessages(library(ggfortify))
+suppressMessages(library(plyr))
+suppressMessages(library(plotrix))
+
+
+```
+
+
+# Load the data:
+```{r}
+
+data <- read.csv("Carbon_rates.csv")
+
+#Turn your 'treatment' column into a character vector
+data$Station <- as.character(data$Station)
+#Then turn it back into a factor with the levels in the correct order
+data$Station <- factor(data$Station, levels=unique(data$Station))
+
+boxplot_data <- read.csv("Boxplot_rates.csv")
+
+
+```
+
+
+# Smoothed means: Visualize small cell contributions over spatial gradients.
+```{r}
+
+
+facet_plot <-  boxplot_data %>%
+  
+  mutate(Region = fct_relevel(Region, 
+            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+  
+  mutate(Type = fct_relevel(Type, 
+            "Carbon", "New production", "Nitrate", "Silica")) %>%
+  
+  ggplot(aes(x = DFS, y = Percent_contribution, color = Type, fill = Type)) +
+    stat_smooth(aes(lty = Type), method = "loess", show.legend = TRUE, 
+                alpha = 0.7, se = TRUE, level = 0.9, span = 0.9) +
+    geom_rug(sides = 'b', alpha = 1, show.legend = FALSE, size = 0.3, color = 'black') +
+    ylab("% Contribution of small cells (< 5µm)") +
+    xlab("Distance from shore (km)") +
+    theme_bw() +
+    ylim(0, 100) +
+    
+    # Optional color schemes:
+    #scale_color_lancet() +
+    #scale_fill_lancet() +
+    #scale_color_brewer(palette = "Dark")
+    #scale_fill_brewer(palette = "Dark")
+  
+    scale_color_manual(values=c("red", "black", "#E69F00", "#56B4E9")) +
+    scale_fill_manual(values=c("red", "black", "#E69F00", "#56B4E9")) +
+    theme(legend.key=element_blank(), legend.position = "top", legend.title = element_blank())
+
+facet_plot
+
+
+pdf(file = "smoothaverage_plot.pdf",  
+    width = 12, 
+    height = 8) 
+
+facet_plot
+
+dev.off()
+
+```
+
+
+# Total contributions: Visualize the magnitude of contributions between large and small cells over spatial gradients.
+```{r}
+
+# Stack the data:
+stacked_data <- select(boxplot_data, c('Type', 'Region', 'Small_uptake', 'Large_uptake'))
+stacked_dataframe <- na.omit(cbind(stacked_data[c(1, 2)], stack(stacked_data[c(3, 4)])))
+
+
+# Carbon
+# Isolate Carbon:
+
+C_stacked_df <- stacked_dataframe[stacked_dataframe$Type == "Carbon", ]
+C_stacked_df$Region <- factor(C_stacked_df$Region)
+C_stacked_df$ind3 <- as.numeric(C_stacked_df$ind)
+
+dodge <- position_dodge(width = 0.9)
+
+C_stacked_df$Region3 <- as.numeric(C_stacked_df$Region) + 
+  3 * (as.numeric((C_stacked_df$ind)) - 0.2)
+
+C_magnitude_boxplot <- C_stacked_df %>%
+  
+
+  mutate(Region = fct_relevel(Region, 
+            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+  
+  
+  ggplot(aes(x = Region, y = values, fill = ind)) +
+  geom_boxplot(alpha=0.5, outlier.shape = NA, position = dodge) +
+  geom_point(pch = 21, position = position_jitterdodge()) +
+  theme(legend.position="top") +
+  xlab("") +
+  ylab("") +
+  ggtitle(expression("Carbon uptake (µg C L"^-1*"d"^-1*")")) +
+  scale_y_sqrt(limits = c(0, 900), breaks = (0:30)^2) +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_discrete(labels = c("Small (<5µm)", "Large (>5µm)")) +
+  theme_bw() +
+  theme(legend.key=element_blank(), legend.position = "top", legend.title = element_blank())
+
+C_magnitude_boxplot
+
+
+
+
+# Nitrate
+# Isolate Nitrate:
+
+N_stacked_df <- stacked_dataframe[stacked_dataframe$Type == "Nitrate", ]
+N_stacked_df$Region <- factor(N_stacked_df$Region)
+N_stacked_df$ind3 <- as.numeric(N_stacked_df$ind)
+
+dodge <- position_dodge(width = 0.9)
+
+N_stacked_df$Region3 <- as.numeric(N_stacked_df$Region) + 
+  3 * (as.numeric((N_stacked_df$ind)) - 0.2)
+
+N_magnitude_boxplot <- N_stacked_df %>%
+  
+
+  mutate(Region = fct_relevel(Region, 
+            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+  
+  
+  ggplot(aes(x = Region, y = values, fill = ind)) +
+  geom_boxplot(alpha=0.5, outlier.shape = NA, position = dodge) +
+  geom_point(pch = 21, position = position_jitterdodge()) +
+  theme(legend.position="top") +
+  xlab("") +
+  ylab("") +
+  ggtitle(expression("Nitrate uptake (µg N L"^-1*"d"^-1*")")) +
+  scale_y_sqrt(limits = c(0, 144), breaks = (0:12)^2) +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_discrete(labels = c("Small (<5µm)", "Large (>5µm)")) +
+  theme_bw() +
+  theme(legend.key=element_blank(), legend.position = "top", legend.title = element_blank())
+
+N_magnitude_boxplot
+
+
+# New production
+# Isolate NP:
+
+NP_stacked_df <- stacked_dataframe[stacked_dataframe$Type == "New production", ]
+NP_stacked_df$Region <- factor(NP_stacked_df$Region)
+NP_stacked_df$ind3 <- as.numeric(NP_stacked_df$ind)
+
+dodge <- position_dodge(width = 0.9)
+
+NP_stacked_df$Region3 <- as.numeric(NP_stacked_df$Region) + 
+  3 * (as.numeric((NP_stacked_df$ind)) - 0.2)
+
+NP_magnitude_boxplot <- NP_stacked_df %>%
+  
+
+  mutate(Region = fct_relevel(Region, 
+            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+  
+  
+  ggplot(aes(x = Region, y = values, fill = ind)) +
+  geom_boxplot(alpha=0.5, outlier.shape = NA, position = dodge) +
+  geom_point(pch = 21, position = position_jitterdodge()) +
+  theme(legend.position="top") +
+  xlab("") +
+  ylab("") +
+  ggtitle(expression("New production (µg C L"^-1*"d"^-1*")")) +
+  scale_y_sqrt(limits = c(0, 260), breaks = (0:16)^2) +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_discrete(labels = c("Small (<5µm)", "Large (>5µm)")) +
+  theme_bw() +
+  theme(legend.key=element_blank(), legend.position = "top", legend.title = element_blank())
+
+NP_magnitude_boxplot
+
+
+# Silica
+# Isolate Si:
+
+Si_stacked_df <- stacked_dataframe[stacked_dataframe$Type == "Silica", ]
+Si_stacked_df$Region <- factor(Si_stacked_df$Region)
+Si_stacked_df$ind3 <- as.numeric(Si_stacked_df$ind)
+
+dodge <- position_dodge(width = 0.9)
+
+Si_magnitude_boxplot <- Si_stacked_df %>%
+  
+
+  mutate(Region = fct_relevel(Region, 
+            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+  
+  
+  ggplot(aes(x = Region, y = values, fill = ind)) +
+  geom_boxplot(alpha=0.5, outlier.shape = NA, position = dodge) +
+  geom_point(pch = 21, position = position_jitterdodge()) +
+  theme(legend.position="top") +
+  xlab("") +
+  ylab("") +
+  ggtitle(expression("Silica Uptake (µmol Si L"^-1*"d"^-1*")")) +
+  scale_y_sqrt(limits = c(0, 16), breaks = (0:4)^2) +
+  scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_discrete(labels = c("Small (<5µm)", "Large (>5µm)")) +
+  theme_bw() +
+  theme(legend.key=element_blank(), legend.position = "top", legend.title = element_blank())
+
+Si_magnitude_boxplot
+
+
+fig <- ggarrange(C_magnitude_boxplot, N_magnitude_boxplot, 
+                 NP_magnitude_boxplot, Si_magnitude_boxplot, common.legend = TRUE)
+
+
+pdf(file = "Mag_boxplots.pdf", 
+    width = 12, 
+    height = 10)
+
+fig
+
+dev.off()
+
+```
+
+
+# Particulate elemental ratios:
+```{r}
+
+# Select an dstack relevant data:
+ridges_data <- select(data, c('Region', 'Large_POC_PON', 'Small_POC_PON', 'POC_PON'))
+ridges_data <- ridges_data[!is.na(as.numeric(ridges_data$Large_POC_PON)), ]
+
+stacked_ridges <- cbind(ridges_data[c(1)], stack(ridges_data[c(2, 3)]))
+stacked_ridges$RR <- as.numeric(stacked_ridges$values)
+
+
+
+stacked_ridges <- na.omit(stacked_ridges)
+
+
+ridges_plot <- stacked_ridges %>%
+  
+
+  mutate(Region = fct_relevel(Region, 
+            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+  
+  ggplot(aes(x = RR, y = Region, group = interaction(ind, Region), fill = ind)) +
+    stat_density_ridges(aes(fill = ind), quantile_lines = TRUE, quantiles = 2, alpha = 0.6, scale = 1, 
+                        jittered_points = FALSE, point_shape = '|', rel_min_height = 0.01) +
+    theme_bw() +
+    ylab("") +
+    scale_x_continuous(name="Redfield Ratio", breaks=c(0, 5, 6.6, 10, 20, 30)) +
+    scale_fill_discrete(labels = c("Small (<5µm)", "Large (>5µm)")) +
+    theme(legend.key=element_blank(), legend.position = "top", legend.title = element_blank())
+
+
+ridges_plot
+
+
+pdf(file = "Ridges_plot.pdf",   # The directory you want to save the file in
+    width = 12, # The width of the plot in inches
+    height = 6) # The height of the plot in inches
+
+ridges_plot
+
+dev.off()
+
+
+```
+
+
+# Create a function to compile averages, medians, standard errors and deviations:
+```{r}
+
+
+means <- function(data_variable){
+  
+  avg <- mean(as.numeric(data_variable))
+  med <- median(as.numeric(data_variable))
+  SD <- sd(as.numeric(data_variable))
+  SE <- std.error(as.numeric(data_variable))
+
+  output <- list(avg, med, SD, SE, colnames = colnames)
+  names(output) <- c("average", "median", "standard deviation", "standard error")
+  
+  return(output)
+  
+}
+
+
+# Calculate statistics:
+means(ridges_data$Small_POC_PON)
+means(ridges_data$Large_POC_PON)
+
+
+```
+
+
+Create a function to calculate regression statistics for all dependent and independent variables:
+```{r}
+
+# Get a data frame
+data_df <- read.csv("Carbon_rates.csv")
+
+# Specify a workable data frame:
+dt = data.frame(data_df)
+
+
+
+# Create a function that takes dependent variables as input, and returns regression summaries for each independent variable:
+
+stats_summary <- function(y_string, dataframe){   # Need to input y_string as a string
+  
+
+  # Specify columns to regress:
+  y_col = y_string
+  x_col = c("Temp", "Salinity", "PAR", "MLD", "DFS", "Nitrate", "Silicate", "DO")  # Independent variables
+  
+  ss <- expand.grid(y=y_col, x=x_col, stringsAsFactors = F) %>%
+    mutate(formula = paste(y,"~",x)) %>%
+    group_by(formula) %>%
+    mutate(r_sq = summary(lm(formula, data=dt))$r.squared) %>%
+    mutate(p = summary(lm(formula, data=dt))$coefficients[2,4]) %>%
+    mutate(coeff = summary(lm(formula, data=dt))$coefficients[2,1]) %>%
+    ungroup()
+  
+  return(ss)
+  
+}
+
+```
+
+
+Apply the function to each measurement:
+```{r}
+
+# Optional: remove winter:
+dt <- dt[!dt$Season == "Winter", ]
+
+
+# Carbon:
+stats_summary("Percent_Nano_Carbon", dt)
+stats_summary("Carbon_Rate", dt)
+stats_summary("Nano_Carbon_Rate", dt)
+
+
+# Nitrogen:
+stats_summary("Percent_Nano_Nitrate", dt)
+stats_summary("Nitrate_Rate", dt)
+stats_summary("Nano_Nitrate_Rate", dt)
+
+
+# Silica:
+stats_summary("Percent_Nano_Silica", dt)
+stats_summary("Silica_Rate", dt)
+stats_summary("Nano_Silica_Rate", dt)
+
+
+# New production:
+stats_summary("Percent_Nano_NP", dt)
+stats_summary("NP_Rate", dt)
+stats_summary("Nano_NP_Rate", dt)
+
+
+```
+
+
+Principal Component Analysis:
+```{r}
+
+# Re-read the dataframe:
+data <- read.csv("Carbon_rates.csv")
+
+# Create suitable dataframes:
+
+# Totals and PSCC:
+df_totals <- data %>% select(Silica_Rate, Carbon_Rate, Nitrate_Rate, NP_Rate, # Totals
+                             Percent_Nano_Silica, Percent_Nano_Carbon, Percent_Nano_Nitrate, Percent_Nano_NP,  # Smalls
+                             SST, MLD, Nitrate, DO, Chlorophyll) # Environmental
+
+df_totals_cats <- data %>% select(Silica_Rate, Carbon_Rate, Nitrate_Rate, NP_Rate, # Totals
+                             Percent_Nano_Silica, Percent_Nano_Carbon, Percent_Nano_Nitrate, Percent_Nano_NP,  # Smalls
+                             SST, MLD, Nitrate, DO, Chlorophyll,  # Environmental
+                             Season, Region, Region2)  # Cats
+
+# Small and large rates:
+df_sfs <- data %>% select(Micro_Silica_Rate, Micro_Carbon_Rate, Micro_Nitrate_Rate, Micro_NP_Rate, # Totals
+                             Nano_Silica_Rate, Nano_Carbon_Rate, Nano_Nitrate_Rate, Nano_NP_Rate,  # Smalls
+                             Temp, MLD, Nitrate, Silicate, DO, Chlorophyll) # Environmental
+
+df_sfs_cats <- data %>% select(Micro_Silica_Rate, Micro_Carbon_Rate, Micro_Nitrate_Rate, Micro_NP_Rate, # Totals
+                             Nano_Silica_Rate, Nano_Carbon_Rate, Nano_Nitrate_Rate, Nano_NP_Rate,  # Smalls
+                             Temp, MLD, Nitrate, Silicate, DO, Chlorophyll,  # Environmental
+                             Season, Region, Region2)  # Cats 
+
+
+
+df_SCC <- data %>% select(Percent_Nano_Silica, Percent_Nano_Carbon, Percent_Nano_Nitrate, Percent_Nano_NP, 
+                              Nitrate, Silicate, Temp, MLD, Sigma, PAR, DO, DFS, Region, Region2, Season,
+                              Nano_Silica_Rate, Nano_Carbon_Rate, Nano_Nitrate_Rate, Nano_NP_Rate)
+
+#PCA_df_totals <- data %>% select(Nano_Silica_Rate, Nano_Carbon_Rate, Nano_Nitrate_Rate, Nano_NP_Rate, 
+                              #Nitrate, Silicate, SST, MLD, Sigma, PAR, DO, Bottom_depth)
+
+PCA_df_SCC <- data %>% select(Percent_Nano_Silica, Percent_Nano_Carbon, Percent_Nano_Nitrate, Percent_Nano_NP, 
+                              Nitrate, Silicate, Temp, MLD, DFS, 
+                              Nano_Silica_Rate, Nano_Carbon_Rate, Nano_Nitrate_Rate, Nano_NP_Rate)
+
+PCA_df_SCC2 <- data %>% select(Percent_Nano_Silica, Percent_Nano_Carbon, Percent_Nano_Nitrate, Percent_Nano_NP, 
+                              Nitrate, Silicate, SST, DO, PAR, Salinity, POC)
+
+
+# Create a function to clean data and input for PCA:
+
+PCA_output <- function(df, df2) {
+  
+  # Omit NaNs:
+  PCA_df <- na.omit(df)
+  df2 <- na.omit(df2)
+  
+  # Create the Principal components:
+  pca <- prcomp(PCA_df, scale = TRUE, center = TRUE, scores = TRUE)
+  
+  
+  # Create an aoutplot figure to visualize the PCs:
+  plot <- autoplot(pca, data = df2, colour = 'Region', loadings = TRUE, 
+         loadings.colour = 'blue',loadings.label = TRUE, 
+         loadings.label.size = 3, loadings.label.colour = 'black', 
+         frame = T, frame.colour = "Region", frame.type = 't')
+  
+  PCA_plot <- plot + 
+  #ylim(-0.4, 0.6) +
+  xlim(-0.4, 0.8) +
+  #guides(fill = FALSE) +
+  #scale_color_manual(values = c(8, 9, 3, 6, 5, 13)) +
+  theme_pubr()
+  
+  return(PCA_plot)
+  
+}
+
+
+# Small cell contributions PCA:
+PCA_output(PCA_df_SCC2, df_SCC)
+
+PCA_output(df_totals, df_totals_cats)
+
+PCA_output(df_sfs, df_sfs_cats)
+
+
+# Save the figure:
+pdf(file = "Rates_PCA.pdf",   # The directory you want to save the file in
+    width = 12, # The width of the plot in inches
+    height = 6) # The height of the plot in inches
+
+PCA_output(df_totals, df_totals_cats)
+
+dev.off()
+
+```
