@@ -55,9 +55,7 @@ boxplot_data <- read.csv("Boxplot_rates.csv")
 
 
 facet_plot <-  boxplot_data %>%
-  
-  mutate(Region = fct_relevel(Region, 
-            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+
   
   mutate(Type = fct_relevel(Type, 
             "Carbon", "New production", "Nitrate", "Silica")) %>%
@@ -84,6 +82,28 @@ facet_plot <-  boxplot_data %>%
 facet_plot
 
 
+Boxplot_SCC <- boxplot_data %>%
+  
+    mutate(Regions = fct_relevel(Region3, 
+            "Coastal", "Transition", "HNLC")) %>%
+  
+  
+    ggplot(aes(x = Regions, y = Percent_contribution, fill = log(Total_uptake))) +
+    geom_boxplot(alpha=0.5, outlier.shape = NA, position = dodge) +
+    geom_point(pch = 21, position = position_jitterdodge()) +
+    theme(legend.position="top") +
+    facet_wrap(~Type) +
+    xlab("") +
+    ylab("") +
+    scale_fill_viridis(option = 'H') +
+    #scale_fill_discrete(labels = c("Small (<5µm)", "Large (>5µm)")) +
+    theme_bw() +
+    theme(legend.key=element_blank(), legend.position = "top", legend.title = element_blank())
+
+Boxplot_SCC
+
+
+
 pdf(file = "smoothaverage_plot.pdf",  
     width = 12, 
     height = 8) 
@@ -99,27 +119,27 @@ dev.off()
 ```{r}
 
 # Stack the data:
-stacked_data <- select(boxplot_data, c('Type', 'Region', 'Small_uptake', 'Large_uptake'))
-stacked_dataframe <- na.omit(cbind(stacked_data[c(1, 2)], stack(stacked_data[c(3, 4)])))
+stacked_data <- select(boxplot_data, c('Type', 'Region3', 'Small_uptake', 'Large_uptake', 'Season'))
+stacked_dataframe <- na.omit(cbind(stacked_data[c(1, 2, 5)], stack(stacked_data[c(3, 4)])))
 
 
 # Carbon
 # Isolate Carbon:
 
 C_stacked_df <- stacked_dataframe[stacked_dataframe$Type == "Carbon", ]
-C_stacked_df$Region <- factor(C_stacked_df$Region)
+C_stacked_df$Region <- factor(C_stacked_df$Region3)
 C_stacked_df$ind3 <- as.numeric(C_stacked_df$ind)
 
 dodge <- position_dodge(width = 0.9)
 
-C_stacked_df$Region3 <- as.numeric(C_stacked_df$Region) + 
-  3 * (as.numeric((C_stacked_df$ind)) - 0.2)
+#C_stacked_df$Regions <- as.numeric(C_stacked_df$Region) + 
+  #3 * (as.numeric((C_stacked_df$ind)) - 0.2)
 
 C_magnitude_boxplot <- C_stacked_df %>%
   
 
   mutate(Region = fct_relevel(Region, 
-            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+            "Coastal", "Transition", "HNLC")) %>%
   
   
   ggplot(aes(x = Region, y = values, fill = ind)) +
@@ -145,19 +165,15 @@ C_magnitude_boxplot
 # Isolate Nitrate:
 
 N_stacked_df <- stacked_dataframe[stacked_dataframe$Type == "Nitrate", ]
-N_stacked_df$Region <- factor(N_stacked_df$Region)
+N_stacked_df$Region <- factor(N_stacked_df$Region3)
 N_stacked_df$ind3 <- as.numeric(N_stacked_df$ind)
 
-dodge <- position_dodge(width = 0.9)
-
-N_stacked_df$Region3 <- as.numeric(N_stacked_df$Region) + 
-  3 * (as.numeric((N_stacked_df$ind)) - 0.2)
 
 N_magnitude_boxplot <- N_stacked_df %>%
   
 
   mutate(Region = fct_relevel(Region, 
-            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+            "Coastal", "Transition", "HNLC")) %>%
   
   
   ggplot(aes(x = Region, y = values, fill = ind)) +
@@ -181,22 +197,22 @@ N_magnitude_boxplot
 # Isolate NP:
 
 NP_stacked_df <- stacked_dataframe[stacked_dataframe$Type == "New production", ]
-NP_stacked_df$Region <- factor(NP_stacked_df$Region)
+NP_stacked_df$Region <- factor(NP_stacked_df$Region3)
 NP_stacked_df$ind3 <- as.numeric(NP_stacked_df$ind)
 
 dodge <- position_dodge(width = 0.9)
 
-NP_stacked_df$Region3 <- as.numeric(NP_stacked_df$Region) + 
-  3 * (as.numeric((NP_stacked_df$ind)) - 0.2)
+#NP_stacked_df$Region3 <- as.numeric(NP_stacked_df$Region3) + 
+  #3 * (as.numeric((NP_stacked_df$ind)) - 0.2)
 
 NP_magnitude_boxplot <- NP_stacked_df %>%
   
 
   mutate(Region = fct_relevel(Region, 
-            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+            "Coastal", "Transition", "HNLC")) %>%
   
   
-  ggplot(aes(x = Region, y = values, fill = ind)) +
+  ggplot(aes(x = Region3, y = values, fill = ind)) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, position = dodge) +
   geom_point(pch = 21, position = position_jitterdodge()) +
   theme(legend.position="top") +
@@ -217,19 +233,17 @@ NP_magnitude_boxplot
 # Isolate Si:
 
 Si_stacked_df <- stacked_dataframe[stacked_dataframe$Type == "Silica", ]
-Si_stacked_df$Region <- factor(Si_stacked_df$Region)
+Si_stacked_df$Region <- factor(Si_stacked_df$Region3)
 Si_stacked_df$ind3 <- as.numeric(Si_stacked_df$ind)
-
-dodge <- position_dodge(width = 0.9)
 
 Si_magnitude_boxplot <- Si_stacked_df %>%
   
 
   mutate(Region = fct_relevel(Region, 
-            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+            "Coastal", "Transition", "HNLC")) %>%
   
   
-  ggplot(aes(x = Region, y = values, fill = ind)) +
+  ggplot(aes(x = Region3, y = values, fill = ind)) +
   geom_boxplot(alpha=0.5, outlier.shape = NA, position = dodge) +
   geom_point(pch = 21, position = position_jitterdodge()) +
   theme(legend.position="top") +
@@ -265,7 +279,7 @@ dev.off()
 ```{r}
 
 # Select an dstack relevant data:
-ridges_data <- select(data, c('Region','Small_POC_PON', 'Large_POC_PON', 'POC_PON'))
+ridges_data <- select(data, c('Region3','Small_POC_PON', 'Large_POC_PON', 'POC_PON'))
 ridges_data <- ridges_data[!is.na(as.numeric(ridges_data$Large_POC_PON)), ]
 
 stacked_ridges <- cbind(ridges_data[c(1)], stack(ridges_data[c(2, 3)]))
@@ -279,10 +293,10 @@ stacked_ridges <- na.omit(stacked_ridges)
 ridges_plot <- stacked_ridges %>%
   
 
-  mutate(Region = fct_relevel(Region, 
-            "Coastal", "Shelf", "Transition", "HNLC")) %>%
+  mutate(Region = fct_relevel(Region3, 
+            "Coastal", "Transition", "HNLC")) %>%
   
-  ggplot(aes(x = RR, y = Region, group = interaction(ind, Region), fill = ind)) +
+  ggplot(aes(x = RR, y = Region3, group = interaction(ind, Region3), fill = ind)) +
     stat_density_ridges(aes(fill = ind), quantile_lines = TRUE, quantiles = 2, alpha = 0.6, scale = 1, 
                         jittered_points = FALSE, point_shape = '|', rel_min_height = 0.01) +
     theme_bw() +
@@ -421,7 +435,7 @@ df_totals <- data %>% select(Silica_Rate, Carbon_Rate, Nitrate_Rate, NP_Rate, # 
 df_totals_cats <- data %>% select(Silica_Rate, Carbon_Rate, Nitrate_Rate, NP_Rate, # Totals
                              Percent_Nano_Silica, Percent_Nano_Carbon, Percent_Nano_Nitrate, Percent_Nano_NP,  # Smalls
                              SST, MLD, Nitrate, DO, Chlorophyll,  # Environmental
-                             Season, Region, Region2)  # Cats
+                             Season, Region, Region2, Region3)  # Cats
 
 # Small and large rates:
 df_sfs <- data %>% select(Micro_Silica_Rate, Micro_Carbon_Rate, Micro_Nitrate_Rate, Micro_NP_Rate, # Totals
@@ -431,12 +445,12 @@ df_sfs <- data %>% select(Micro_Silica_Rate, Micro_Carbon_Rate, Micro_Nitrate_Ra
 df_sfs_cats <- data %>% select(Micro_Silica_Rate, Micro_Carbon_Rate, Micro_Nitrate_Rate, Micro_NP_Rate, # Totals
                              Nano_Silica_Rate, Nano_Carbon_Rate, Nano_Nitrate_Rate, Nano_NP_Rate,  # Smalls
                              Temp, MLD, Nitrate, Silicate, DO, Chlorophyll,  # Environmental
-                             Season, Region, Region2)  # Cats 
+                             Season, Region, Region2, Region3)  # Cats 
 
 
 
 df_SCC <- data %>% select(Percent_Nano_Silica, Percent_Nano_Carbon, Percent_Nano_Nitrate, Percent_Nano_NP, 
-                              Nitrate, Silicate, Temp, MLD, Sigma, PAR, DO, DFS, Region, Region2, Season,
+                              Nitrate, Silicate, Temp, MLD, Sigma, PAR, DO, DFS, Region, Region2, Region3, Season,
                               Nano_Silica_Rate, Nano_Carbon_Rate, Nano_Nitrate_Rate, Nano_NP_Rate)
 
 #PCA_df_totals <- data %>% select(Nano_Silica_Rate, Nano_Carbon_Rate, Nano_Nitrate_Rate, Nano_NP_Rate, 
@@ -463,10 +477,10 @@ PCA_output <- function(df, df2) {
   
   
   # Create an aoutplot figure to visualize the PCs:
-  plot <- autoplot(pca, data = df2, colour = 'Region', loadings = TRUE, 
+  plot <- autoplot(pca, data = df2, colour = 'Region3', loadings = TRUE, 
          loadings.colour = 'blue',loadings.label = TRUE, 
          loadings.label.size = 3, loadings.label.colour = 'black', 
-         frame = T, frame.colour = "Region", frame.type = 't')
+         frame = T, frame.colour = "Region3", frame.type = 't')
   
   PCA_plot <- plot + 
   #ylim(-0.4, 0.6) +
