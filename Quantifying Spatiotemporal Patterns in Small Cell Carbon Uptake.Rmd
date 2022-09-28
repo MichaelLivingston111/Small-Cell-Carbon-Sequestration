@@ -9,7 +9,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 
-# A file focused on quantifying, visualizing and identifying statistical trends in small-cell marine carbon uptake. Using data from 13-C and # 15-N labeled isotopic field experiments. 
+# A file focused on quantifying, visualizing and identifying statistical trends 
+# in small-cell marine carbon uptake. Using data from 13-C and # 15-N labeled 
+# isotopic field experiments. 
 
 
 # Upload required libraries:
