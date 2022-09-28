@@ -1,6 +1,0 @@
----
-title: "Testing"
-output: html_document
----
-
-Testing!
