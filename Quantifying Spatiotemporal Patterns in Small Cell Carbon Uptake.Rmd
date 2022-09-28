@@ -81,7 +81,6 @@ facet_plot <-  boxplot_data %>%
 
 facet_plot
 
-changes
 
 Boxplot_SCC <- boxplot_data %>%
   
